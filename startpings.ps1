@@ -5,7 +5,7 @@ $ScriptPath = ".\ping-test.ps1"
 $Count = 5 # = 86400 =24 hours in seconds (with perfect pings = 1 day)
 $date = get-date -Format yyyy-MM-dd
 foreach ($computer in $computers)  {
-    $logpath = ".\$date -$Computer-Pinglog.csv"
+    $logpath = ".\$date-$Computer-Pinglog.csv"
     $Arguments = "$Scriptpath -Computer $computer -count $Count -LogPath $logpath -Verbose" 
     write-host $Arguments
     start-Process -filepath powershell -ArgumentList $Arguments

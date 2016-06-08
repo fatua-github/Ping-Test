@@ -10,13 +10,19 @@
 
 
 
-# Script will ping each host 3 times and take an average 
+# Script will ping each host and record the data to a csv 
 
 #output format is:  "TimeStamp","Source","Destination","IPV4Address","Status","ResponseTime"
+#TimeStamp - Time the ping started
+#Source - Source IP
+#Destination - Destination supplied to the script (NAme, or ip)
+#IPV4Address - IPV4 Address of Destination
+#Status - Failed or NULL  (Timed out)
+#Responsetime = ms response or NULL if Failed (Timed out)
 
 [CmdletBinding()]
 Param (
-    [int32]$Count = 5,  # Number of loops of $PingsForAverage pings  (eg. 5 loops with 3 pingsforaverage = 15 pings total)
+    [int32]$Count = 5,  # Number of pings
     
     [Parameter(ValueFromPipeline=$true)]
     [String[]]$Computer = "127.0.0.1",
