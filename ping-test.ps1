@@ -50,12 +50,13 @@ Write-Verbose "Beginning Ping monitoring of $Comptuer for $Count tries:"
 While ($Count -gt 0)
 {   
     $Ping = Get-WmiObject Win32_PingStatus -Filter "Address = '$Computer'" | Select @{Label="TimeStamp";Expression={Get-Date}},@{Label="Source";Expression={ $_.__Server }},@{Label="Destination";Expression={ $_.Address }},IPv4Address,@{Label="Status";Expression={ If ($_.StatusCode -ne 0) {"Failed"} Else {""}}},ResponseTime
-    $Result = $Ping | Select TimeStamp,Source,Destination,IPv4Address,Status,ResponseTime | ConvertTo-Csv -NoTypeInformation
-    if ($($Ping | Select Status) -eq "Failed" ) {
+    $Result = $Ping | Select TimeStamp,Source,Destination,IPv4Address,Status,ResponseTime
+    if ($Result.status -eq "Failed" ) {
         $Result.ResponseTime = 9999999
     }
-    Write-verbose ($Ping | Select TimeStamp,Source,Destination,IPv4Address,Status,ResponseTime | Format-Table -AutoSize | Out-String)
+    Write-verbose ($Result | Format-Table -AutoSize | Out-String)
+    $ResultCSV = $Result | ConvertTo-Csv -NoTypeinformation
     Start-Sleep -Seconds 1
     $count--
-    $Result[1] | Add-Content -Path $LogPath
+    $ResultCSV[1] | Add-Content -Path $LogPath
 }
