@@ -25,8 +25,8 @@ Param (
     [int32]$Count = 5,  # Number of pings
     
     [Parameter(ValueFromPipeline=$true)]
-    [String[]]$Computer = "127.0.0.1",
-    
+    [String]$Computer = "127.0.0.1",
+    [int32]$ComputerPORT = $null,
     [string]$LogPath = ".\pinglog.csv"
 )
 
@@ -46,17 +46,42 @@ If (-not (Test-Path $LogPath))
 }
 
 #Log collection loop
-Write-Verbose "Beginning Ping monitoring of $Comptuer for $Count tries:"
-While ($Count -gt 0)
-{   
-    $Ping = Get-WmiObject Win32_PingStatus -Filter "Address = '$Computer'" | Select @{Label="TimeStamp";Expression={Get-Date}},@{Label="Source";Expression={ $_.__Server }},@{Label="Destination";Expression={ $_.Address }},IPv4Address,@{Label="Status";Expression={ If ($_.StatusCode -ne 0) {"Failed"} Else {""}}},ResponseTime
-    $Result = $Ping | Select TimeStamp,Source,Destination,IPv4Address,Status,ResponseTime
-    if ($Result.status -eq "Failed" ) {
-        $Result.ResponseTime = 9999999
+if ($ComputerPORT) {
+    $output = New-Object System.Object
+    While ($count -gt 0){
+        #Fill in TCP Ping details
+        Write-Verbose "Beginning TCP moniotring of $Computer on Port $ComputerPORT. $count tests remaining"
+        $output | Add-Member -type NoteProperty -name Timestamp -Value $(Get-Date)
+        $time = Measure-Command {$result = test-netconnection -ComputerName $Computer -Port $ComputerPORT -InformationLevel Detailed}
+        write-Verbose "Time: $Time"
+        $output | Add-Member -type NoteProperty -name Source -Value $env:ComputerName
+        $output | Add-Member -type NoteProperty -name Destination -Value $result.ComputerName
+        $output | Add-Member -type NoteProperty -name IPV4Address -Value $result.RemoteAddress
+        $output | Add-Member -type NoteProperty -name Status -Value $result.PingSucceeded
+        $output | Add-Member -type NoteProperty -name ResponseTime -Value $result.PingReplyDetails
+        $output | Add-Member -type NoteProperty -name TCPRemotePort -Value $result.RemotePort
+        $output | Add-Member -type NoteProperty -name TCPTestSucceeded -Value $result.TCPTestSucceeded
+        $output | Add-Member -type NoteProperty -name TimeMeasure -Value $time
+  #      $output.RemotePort = $result.RemotePort
+
+        write-Verbose ($Result | Format-Table -AutoSize | Out-String)
+        Write-Verbose ($output | Format-Table -AutoSize | Out-String)
+        $count--
     }
-    Write-verbose ($Result | Format-Table -AutoSize | Out-String)
-    $ResultCSV = $Result | ConvertTo-Csv -NoTypeinformation
-    Start-Sleep -Seconds 1
-    $count--
-    $ResultCSV[1] | Add-Content -Path $LogPath
+}
+else {
+    Write-Verbose "Beginning Ping monitoring of $Comptuer. $Count tests remaining"
+    While ($Count -gt 0)
+    {   
+        $Ping = Get-WmiObject Win32_PingStatus -Filter "Address = '$Computer'" | Select @{Label="TimeStamp";Expression={Get-Date}},@{Label="Source";Expression={ $_.__Server }},@{Label="Destination";Expression={ $_.Address }},IPv4Address,@{Label="Status";Expression={ If ($_.StatusCode -ne 0) {"Failed"} Else {""}}},ResponseTime
+       $Result = $Ping | Select TimeStamp,Source,Destination,IPv4Address,Status,ResponseTime
+       if ($Result.status -eq "Failed" ) {
+           $Result.ResponseTime = 9999999
+        }
+       Write-verbose ($Result | Format-Table -AutoSize | Out-String)
+       $ResultCSV = $Result | ConvertTo-Csv -NoTypeinformation
+       Start-Sleep -Seconds 1
+       $count--
+       $ResultCSV[1] | Add-Content -Path $LogPath
+    }
 }
