@@ -49,8 +49,12 @@ If (-not (Test-Path $LogPath))
 
 #Log collection loop
 if ($ComputerPORT) { #If port specified, do a TCP test
-    $output = New-Object System.Object
+
     While ($count -gt 0){
+        if ($output) {
+           clear-variable output
+        }
+        $output = New-Object System.Object
         #Fill in TCP Ping details
         Write-Verbose "Beginning TCP moniotring of $Computer on Port $ComputerPORT. $count tests remaining"
         $output | Add-Member -type NoteProperty -name Timestamp -Value $(Get-Date)
@@ -95,7 +99,7 @@ else {
     Write-Verbose "Beginning Ping monitoring of $Comptuer. $Count tests remaining"
     While ($Count -gt 0)
     {   
-        $Ping = Get-WmiObject Win32_PingStatus -Filter "Address = '$Computer'" | Select @{Label="TimeStamp";Expression={Get-Date}},@{Label="Source";Expression={ $_.__Server }},@{Label="Destination";Expression={ $_.Address }},IPv4Address,@{Label="Status";Expression={ If ($_.StatusCode -ne 0) {"Failed"} Else {""}}},ResponseTime
+       $Ping = Get-WmiObject Win32_PingStatus -Filter "Address = '$Computer'" | Select @{Label="TimeStamp";Expression={Get-Date}},@{Label="Source";Expression={ $_.__Server }},@{Label="Destination";Expression={ $_.Address }},IPv4Address,@{Label="Status";Expression={ If ($_.StatusCode -ne 0) {"Failed"} Else {""}}},ResponseTime
        $Result = $Ping | Select TimeStamp,Source,Destination,IPv4Address,Status,ResponseTime
        if ($Result.status -eq "Failed" ) {
            $Result.ResponseTime = 9999999
